@@ -17,11 +17,22 @@ def simpan_ke_file(daftar_tugas):
 def muat_dari_file():
     if not os.path.exists(FILENAME):
         return []
+
     try:
         with open(FILENAME, "r", encoding="utf-8") as f:
+            if os.path.getsize(FILENAME) == 0:
+                return []
             return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        print("⚠️ File data rusak, memulai dengan daftar kosong.")
+    except json.JSONDecodeError:
+        print("\n" + "!" * 50)
+        print("⚠️ PERINGATAN: File 'tugas_saya.json' rusak atau formatnya salah.")
+        print("Sangat disarankan untuk mengecek file tersebut secara manual.")
+        print("!" * 50)
+        input(
+            "Tekan Enter untuk melanjutkan dengan daftar kosong (Data lama tidak akan hilang sampai Anda menyimpan data baru)...")
+        return []
+    except Exception as e:
+        print(f"⚠️ Terjadi kesalahan sistem: {e}")
         return []
 
 
@@ -63,15 +74,25 @@ def tampilkan_tugas(daftar_tugas, filter_status=None):
 
 def tambah_tugas(daftar_tugas):
     print("\n--- ➕ TAMBAH TUGAS ---")
-    judul = input("Judul: ").strip() or "Tanpa Judul"
+
+    while True:
+        judul = input("Judul: ").strip()
+        if judul:
+            break
+        print("⚠️ Judul tidak boleh kosong. Silakan masukkan nama tugas.")
+
     deskripsi = input("Deskripsi: ").strip() or "-"
 
     while True:
         try:
-            waktu = int(input("Estimasi waktu (menit): "))
+            waktu_raw = input("Estimasi waktu (menit): ").strip()
+            waktu = int(waktu_raw)
+            if waktu < 0:
+                print("⚠️ Waktu tidak bisa negatif!")
+                continue
             break
         except ValueError:
-            print("⚠️ Harap masukkan angka untuk waktu!")
+            print("⚠️ Masukkan angka yang valid untuk waktu!")
 
     id_baru = max([t["id"] for t in daftar_tugas], default=0) + 1
     daftar_tugas.append({
@@ -82,7 +103,7 @@ def tambah_tugas(daftar_tugas):
         "estimasi_waktu": waktu
     })
     simpan_ke_file(daftar_tugas)
-    print(f"✅ Tugas '{judul}' ditambahkan!")
+    print(f"✅ Tugas '{judul}' berhasil disimpan!")
 
 
 def edit_tugas(daftar_tugas):
