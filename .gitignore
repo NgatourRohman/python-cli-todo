@@ -1,0 +1,16 @@
+# Mengabaikan file database lokal
+tugas_saya.json
+
+# Mengabaikan file cache/build bawaan Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Mengabaikan virtual environment
+venv/
+env/
+.env
+
+# Mengabaikan konfigurasi IDE / Text Editor
+.idea/
+.vscode/
