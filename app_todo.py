@@ -4,137 +4,159 @@ import os
 FILENAME = "tugas_saya.json"
 
 
+# --- HELPER FUNCTIONS ---
+
 def simpan_ke_file(daftar_tugas):
-    with open(FILENAME, "w", encoding="utf-8") as f:
-        json.dump(daftar_tugas, f, indent=4)
+    try:
+        with open(FILENAME, "w", encoding="utf-8") as f:
+            json.dump(daftar_tugas, f, indent=4)
+    except IOError as e:
+        print(f"⚠️ Gagal menyimpan data: {e}")
 
 
 def muat_dari_file():
     if not os.path.exists(FILENAME):
-        return [
-            {"id": 1, "judul": "Review Materi MLOps", "deskripsi": "Mempelajari agentic workflows.", "status": True,
-             "estimasi_waktu": 60},
-            {"id": 2, "judul": "Kerjakan Fitur ArtBuddy", "deskripsi": "Sesuaikan prompt ArtStar.", "status": False,
-             "estimasi_waktu": 60}
-        ]
-    with open(FILENAME, "r", encoding="utf-8") as f:
-        return json.load(f)
+        return []
+    try:
+        with open(FILENAME, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, IOError):
+        print("⚠️ File data rusak, memulai dengan daftar kosong.")
+        return []
 
+
+def cari_tugas_by_id(daftar_tugas, id_target):
+    return next((t for t in daftar_tugas if t["id"] == id_target), None)
+
+
+# --- CORE FUNCTIONS ---
 
 def tampilkan_statistik(daftar_tugas):
     if not daftar_tugas:
+        print("\n📊 Statistik: Belum ada data tugas.")
         return
     total = len(daftar_tugas)
-    selesai = sum(1 for t in daftar_tugas if t["status"])
+    selesai = sum(t["status"] for t in daftar_tugas)
     persen = (selesai / total) * 100
-    total_waktu = sum(t["estimasi_waktu"] for t in daftar_tugas if not t["status"])
+    sisa_waktu = sum(t["estimasi_waktu"] for t in daftar_tugas if not t["status"])
 
-    print(f"\n📊 STATISTIK: {selesai}/{total} Tugas Selesai ({persen:.1f}%)")
-    print(f"⏳ Sisa waktu pengerjaan: {total_waktu} menit")
+    print(f"\n📊 PROGRESS: {selesai}/{total} Selesai ({persen:.1f}%) | ⏳ Sisa Waktu: {sisa_waktu} mnt")
 
 
 def tampilkan_tugas(daftar_tugas, filter_status=None):
     print("\n" + "=" * 50)
     label = "SEMUA TUGAS" if filter_status is None else ("SELESAI" if filter_status else "BELUM SELESAI")
-    print(f"📋 DAFTAR TUGAS ({label})")
+    print(f"📋 {label}")
     print("=" * 50)
 
-    tugas_tampil = daftar_tugas if filter_status is None else [t for t in daftar_tugas if t["status"] == filter_status]
+    tugas_tampil = [t for t in daftar_tugas if filter_status is None or t["status"] == filter_status]
 
     if not tugas_tampil:
-        print("Tidak ada tugas dalam kategori ini.")
+        print("Kategori ini masih kosong.")
     else:
-        for tugas in tugas_tampil:
-            simbol = "[✓]" if tugas["status"] else "[ ]"
-            print(f"{simbol} ID: {tugas['id']} | {tugas['judul']} ({tugas['estimasi_waktu']} menit)")
-            print(f"    Detail: {tugas['deskripsi']}")
-            print("-" * 50)
+        for t in tugas_tampil:
+            simbol = "[✓]" if t["status"] else "[ ]"
+            print(f"{simbol} ID: {t['id']} | {t['judul']} ({t['estimasi_waktu']} mnt)")
+            print(f"    Detail: {t['deskripsi']}")
+    print("-" * 50)
 
 
 def tambah_tugas(daftar_tugas):
-    print("\n--- ➕ TAMBAH TUGAS BARU ---")
-    judul = input("Judul: ")
-    deskripsi = input("Deskripsi: ")
+    print("\n--- ➕ TAMBAH TUGAS ---")
+    judul = input("Judul: ").strip() or "Tanpa Judul"
+    deskripsi = input("Deskripsi: ").strip() or "-"
+
     while True:
         try:
             waktu = int(input("Estimasi waktu (menit): "))
             break
         except ValueError:
-            print("⚠️ Masukkan angka!")
+            print("⚠️ Harap masukkan angka untuk waktu!")
 
     id_baru = max([t["id"] for t in daftar_tugas], default=0) + 1
-    daftar_tugas.append(
-        {"id": id_baru, "judul": judul, "deskripsi": deskripsi, "status": False, "estimasi_waktu": waktu})
+    daftar_tugas.append({
+        "id": id_baru,
+        "judul": judul,
+        "deskripsi": deskripsi,
+        "status": False,
+        "estimasi_waktu": waktu
+    })
     simpan_ke_file(daftar_tugas)
-    print("✅ Tersimpan!")
+    print(f"✅ Tugas '{judul}' ditambahkan!")
 
 
 def edit_tugas(daftar_tugas):
     tampilkan_tugas(daftar_tugas)
     try:
-        id_target = int(input("\nID tugas yang ingin diedit: "))
-        for t in daftar_tugas:
-            if t["id"] == id_target:
-                print(f"Edit: {t['judul']}. Kosongkan jika tidak ingin mengubah.")
-                judul = input(f"Judul baru [{t['judul']}]: ") or t['judul']
-                desk = input(f"Deskripsi baru [{t['deskripsi']}]: ") or t['deskripsi']
-                waktu_inp = input(f"Waktu baru [{t['estimasi_waktu']}]: ")
-                waktu = int(waktu_inp) if waktu_inp else t['estimasi_waktu']
+        id_target = int(input("\nMasukkan ID untuk edit: "))
+        tugas = cari_tugas_by_id(daftar_tugas, id_target)
 
-                t.update({"judul": judul, "deskripsi": desk, "estimasi_waktu": waktu})
-                simpan_ke_file(daftar_tugas)
-                print("✅ Berhasil diupdate!")
-                return
-        print("⚠️ ID tidak ditemukan.")
+        if tugas:
+            print(f"Mengedit: {tugas['judul']} (Tekan Enter untuk lewati)")
+            tugas['judul'] = input(f"Judul [{tugas['judul']}]: ") or tugas['judul']
+            tugas['deskripsi'] = input(f"Deskripsi [{tugas['deskripsi']}]: ") or tugas['deskripsi']
+            waktu_raw = input(f"Waktu [{tugas['estimasi_waktu']}]: ")
+            tugas['estimasi_waktu'] = int(waktu_raw) if waktu_raw else tugas['estimasi_waktu']
+
+            simpan_ke_file(daftar_tugas)
+            print("✅ Update berhasil!")
+        else:
+            print("⚠️ ID tidak ditemukan.")
     except ValueError:
         print("⚠️ Input tidak valid.")
 
 
-def hapus_tugas(daftar_tugas):
-    tampilkan_tugas(daftar_tugas)
-    try:
-        id_target = int(input("\nID tugas yang akan dihapus: "))
-        for i, t in enumerate(daftar_tugas):
-            if t["id"] == id_target:
-                daftar_tugas.pop(i)
-                simpan_ke_file(daftar_tugas)
-                print("🗑️ Berhasil dihapus.")
-                return
-        print("⚠️ ID tidak ditemukan.")
-    except ValueError:
-        print("⚠️ Input tidak valid.")
-
+# --- MAIN APP ---
 
 def main():
     daftar_tugas = muat_dari_file()
 
+    menu_teks = (
+        "\n1. Lihat Semua \n2. Tambah \n3. Selesaikan\n4. Edit \n5. Hapus \n6. Filter \n7. Keluar"
+    )
+
     while True:
         tampilkan_statistik(daftar_tugas)
-        print("\n=== MENU UTAMA ===")
-        print("1. Lihat Semua \n2. Tambah \n3. Tandai Selesai \n4. Edit \n5. Hapus \n6. Filter \n7. Keluar")
+        print(menu_teks)
+        pilihan = input("\nPilih menu: ")
 
-        p = input("\nPilih menu: ")
-        if p == '1':
+        if pilihan == '1':
             tampilkan_tugas(daftar_tugas)
-        elif p == '2':
+        elif pilihan == '2':
             tambah_tugas(daftar_tugas)
-        elif p == '3':
-            tampilkan_tugas(daftar_tugas, False)
+        elif pilihan == '3':
+            tampilkan_tugas(daftar_tugas, filter_status=False)
             try:
                 id_s = int(input("ID yang selesai: "))
-                for t in daftar_tugas:
-                    if t["id"] == id_s: t["status"] = True; break
-                simpan_ke_file(daftar_tugas)
-            except:
-                print("Gagal.")
-        elif p == '4':
+                tugas = cari_tugas_by_id(daftar_tugas, id_s)
+                if tugas:
+                    tugas["status"] = True
+                    simpan_ke_file(daftar_tugas)
+                    print(f"🎉 '{tugas['judul']}' selesai!")
+                else:
+                    print("⚠️ ID tidak ditemukan.")
+            except ValueError:
+                print("⚠️ Masukkan angka ID!")
+        elif pilihan == '4':
             edit_tugas(daftar_tugas)
-        elif p == '5':
-            hapus_tugas(daftar_tugas)
-        elif p == '6':
-            f = input("Filter (1: Selesai, 2: Belum): ")
-            tampilkan_tugas(daftar_tugas, f == '1')
-        elif p == '7':
+        elif pilihan == '5':
+            tampilkan_tugas(daftar_tugas)
+            try:
+                id_h = int(input("ID yang dihapus: "))
+                tugas_awal = len(daftar_tugas)
+                daftar_tugas[:] = [t for t in daftar_tugas if t["id"] != id_h]
+                if len(daftar_tugas) < tugas_awal:
+                    simpan_ke_file(daftar_tugas)
+                    print("🗑️ Berhasil dihapus.")
+                else:
+                    print("⚠️ ID tidak ditemukan.")
+            except ValueError:
+                print("⚠️ Masukkan angka ID!")
+        elif pilihan == '6':
+            f = input("Filter (1: Selesai, 2: Belum Selesai): ")
+            tampilkan_tugas(daftar_tugas, filter_status=(f == '1'))
+        elif pilihan == '7':
+            print("🚀 Tetap produktif! Sampai jumpa.")
             break
 
 
