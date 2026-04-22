@@ -28,8 +28,8 @@ def muat_dari_file():
         print("⚠️ PERINGATAN: File 'tugas_saya.json' rusak atau formatnya salah.")
         print("Sangat disarankan untuk mengecek file tersebut secara manual.")
         print("!" * 50)
-        input(
-            "Tekan Enter untuk melanjutkan dengan daftar kosong (Data lama tidak akan hilang sampai Anda menyimpan data baru)...")
+        # input(
+        #     "Tekan Enter untuk melanjutkan dengan daftar kosong (Data lama tidak akan hilang sampai Anda menyimpan data baru)...")
         return []
     except Exception as e:
         print(f"⚠️ Terjadi kesalahan sistem: {e}")

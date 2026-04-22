@@ -14,3 +14,9 @@ env/
 # Mengabaikan konfigurasi IDE / Text Editor
 .idea/
 .vscode/
+
+# Mengabaikan cache hasil testing
+.pytest_cache/
+.tox/
+.coverage
+htmlcov/
