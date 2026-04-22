@@ -9,3 +9,4 @@ Aplikasi To-Do List interaktif berbasis Command Line Interface (CLI) yang dibang
 - **Filter Tampilan:** Memfilter daftar tugas berdasarkan status (Selesai / Belum Selesai).
 - **Penyimpanan Permanen:** Data otomatis disimpan dan dimuat dari file `tugas_saya.json`.
 - **Penanganan Error (Error Handling):** Memastikan aplikasi tidak *crash* jika pengguna salah memasukkan tipe data pada terminal.
+- **Unit Testing:** Dilengkapi dengan *test script* menggunakan `pytest` untuk menjamin stabilitas logika aplikasi.
